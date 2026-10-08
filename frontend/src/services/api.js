@@ -16,13 +16,19 @@ export async function checkHealth() {
 }
 
 // Assessments
-export async function createAssessment(payload) {
+export async function createAssessment(payload, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const res = await fetch(`${API_BASE}/assessments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     const data = await res.json();
     if (!res.ok) {
@@ -34,6 +40,12 @@ export async function createAssessment(payload) {
     }
     return data.data;
   } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      const timeoutError = new Error('Assessment request timed out after 30 seconds. Please check your connection and try again.');
+      console.error('[API] createAssessment request timed out:', timeoutError);
+      throw timeoutError;
+    }
     console.error('[API] createAssessment error:', err);
     throw err;
   }

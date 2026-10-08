@@ -5,7 +5,6 @@ import StepLifestyle from './StepLifestyle';
 import StepGymExercise from './StepGymExercise';
 import StepNutrition from './StepNutrition';
 import StepHealthLimitations from './StepHealthLimitations';
-import AnalysisLoadingScreen from './AnalysisLoadingScreen';
 import { createAssessment } from '../../services/api';
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -45,8 +44,6 @@ export default function AssessmentWizard({ onComplete, onCancel }) {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAnalysisScreen, setShowAnalysisScreen] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
   const [submitError, setSubmitError] = useState(null);
 
   const updateFormData = (fields) => {
@@ -135,23 +132,17 @@ export default function AssessmentWizard({ onComplete, onCancel }) {
 
     setIsSubmitting(true);
     setSubmitError(null);
-    setShowAnalysisScreen(true);
 
     try {
       const assessmentResult = await createAssessment(formData);
-      setAnalysisResult(assessmentResult);
-    } catch (err) {
       setIsSubmitting(false);
-      setShowAnalysisScreen(false);
-      setSubmitError(err.message || 'Failed to submit assessment. Please try again.');
-    }
-  };
-
-  const handleAnalysisAnimationComplete = () => {
-    setIsSubmitting(false);
-    setShowAnalysisScreen(false);
-    if (analysisResult && onComplete) {
-      onComplete(analysisResult);
+      if (assessmentResult && onComplete) {
+        onComplete(assessmentResult);
+      }
+    } catch (err) {
+      console.error('Assessment submission error:', err);
+      setIsSubmitting(false);
+      setSubmitError(err.message || 'Unable to generate your assessment. Please try again.');
     }
   };
 
@@ -166,12 +157,6 @@ export default function AssessmentWizard({ onComplete, onCancel }) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B1220] py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
-      
-      {/* Full-Screen Analysis Loading Screen */}
-      {showAnalysisScreen && (
-        <AnalysisLoadingScreen onComplete={handleAnalysisAnimationComplete} />
-      )}
-
       <div className="max-w-3xl mx-auto">
         
         {/* Step Progress Header */}
@@ -269,7 +254,7 @@ export default function AssessmentWizard({ onComplete, onCancel }) {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin text-emerald-200" />
-                  <span>Synthesizing Assessment...</span>
+                  <span>Generating Assessment...</span>
                 </>
               ) : currentStep === TOTAL_STEPS ? (
                 <>
